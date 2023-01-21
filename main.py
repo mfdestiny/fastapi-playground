@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 app = FastAPI()
@@ -11,9 +10,20 @@ class ProfileInfo(BaseModel):
     long_bio: str
 
 class User(BaseModel):
-    username: str
+    username: str = Field(
+        alias="name",
+        title="the username",
+        description = "username of user",
+        min_length = 1,
+        max_length = 20,
+        default = None
+    )
     profile_info: ProfileInfo
-    liked_posts: Optional[List[int]] = None
+    liked_posts: Optional[List[int]] = Field(
+        description = "array of post ids the user liked",
+        min_items = 2,
+        max_items = 10
+    )
 
 def get_user_info() -> User:
     profile_info = {
@@ -23,22 +33,17 @@ def get_user_info() -> User:
 
     profile_info = ProfileInfo(**profile_info)
 
-    content = {
-        'username': "test_user",
+    user_content = {
+        'name': "wiz khalifa",
         'profile_info': profile_info,
-        'liked_posts': [1]
+        'liked_posts': [1] * 9
     }
 
 
-    return User(**content)
+    return User(**user_content)
 
 @app.get("/user/me", response_model=User)
 def test_endpoint():
     user = get_user_info()
     return user
 
-
-
-@app.get("/", response_class=PlainTextResponse)
-def home():
-    return "back at home"
