@@ -1,49 +1,79 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import List
 
 app = FastAPI()
 
 
-class ProfileInfo(BaseModel):
-    short_description: str
-    long_bio: str
 
 class User(BaseModel):
     username: str = Field(
-        alias="name",
+        alias= "name",
         title="the username",
         description = "username of user",
         min_length = 1,
         max_length = 20,
         default = None
     )
-    profile_info: ProfileInfo
-    liked_posts: Optional[List[int]] = Field(
-        description = "array of post ids the user liked",
-        min_items = 2,
-        max_items = 10
+    liked_posts: List[int] = Field(
+        description = "array of post ids the user liked"
     )
 
-def get_user_info() -> User:
-    profile_info = {
-        "short_description": "howdy",
-        "long_bio": "im a cowboy"
+    #class Config:
+    #    max_any_str_ length = 20
+
+class FullUserProfile(User):
+    short_description: str
+    long_bio: str
+
+#command + alt + L auto formatting
+def get_user_info(user_id: str = "default") -> FullUserProfile:
+    profiles_info = {
+        "default": {
+            "short_description": "howdy",
+            "long_bio": "im a cowboy",
+        },
+        "user_1": {
+            "short_description": "user1 bio description",
+            "long_bio": "user1 went to the moon"
+        }
     }
 
-    profile_info = ProfileInfo(**profile_info)
+    profile_info = profiles_info[user_id]
 
-    user_content = {
-        'name': "wiz khalifa",
-        'profile_info': profile_info,
-        'liked_posts': [1] * 9
+    users_info = {
+        "default": {
+            "liked_posts": [420] * 9,
+            "profile_info": profile_info
+        },
+        "user_1": {
+            "liked_posts": [],
+            "profile_info": profile_info
+        }
+    }
+    user_info = users_info[user_id]
+
+    user = User(**user_info)
+    full_profile = {
+        **profile_info,
+        **user.dict()
     }
 
+    return FullUserProfile(**full_profile)
 
-    return User(**user_content)
 
-@app.get("/user/me", response_model=User)
+@app.get("/user/me", response_model=FullUserProfile)
 def test_endpoint():
-    user = get_user_info()
-    return user
 
+    full_user = get_user_info()
+
+    return full_user
+
+
+
+@app.get("/user/{user_id}", response_model=FullUserProfile)
+def get_user_by_id(user_id: str):
+
+    full_user = get_user_info(user_id)
+
+    return full_user
